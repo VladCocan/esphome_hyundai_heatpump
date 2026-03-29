@@ -2,8 +2,9 @@
 
 #include <cstdint>
 
-#include "esphome/components/modbus_controller/modbus_controller.h"
 #include "esphome/core/component.h"
+
+#include "modbus_controller.h"
 
 namespace esphome {
 namespace hyundai_heatpump {

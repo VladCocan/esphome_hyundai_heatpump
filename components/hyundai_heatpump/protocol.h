@@ -4,7 +4,7 @@
 #include <string>
 #include <vector>
 
-#include "esphome/components/modbus_controller/modbus_controller.h"
+#include "modbus_controller.h"
 
 namespace esphome {
 namespace hyundai_heatpump {

@@ -7,8 +7,9 @@ from esphome.const import (
     CONF_ID,
     CONF_UPDATE_INTERVAL,
 )
+from esphome.core import CORE, Define
 
-DEPENDENCIES = ["uart", "modbus_controller"]
+DEPENDENCIES = ["uart"]
 AUTO_LOAD = [
     "modbus",
     "sensor",
@@ -26,7 +27,7 @@ CONF_DEBUG_LOG_MESSAGES_RAW = "debug_log_messages_raw"
 CONF_DEBUG_LOG_MESSAGES_ON_CHANGE = "debug_log_messages_on_change"
 
 ENTITY_COUNT_DEFINES = {
-    "ESPHOME_ENTITY_SENSOR_COUNT": 22,
+    "ESPHOME_ENTITY_SENSOR_COUNT": 23,
     "ESPHOME_ENTITY_BINARY_SENSOR_COUNT": 13,
     "ESPHOME_ENTITY_SWITCH_COUNT": 8,
     "ESPHOME_ENTITY_NUMBER_COUNT": 10,
@@ -72,7 +73,7 @@ CONFIG_SCHEMA = cv.All(
 
 async def to_code(config):
     parent = cg.new_Pvariable(config[CONF_INTERNAL_MODBUS_ID])
-    await cg.register_component(parent, config)
+    await cg.register_component(parent, {})
     await uart.register_uart_device(parent, config)
     cg.add(parent.set_role(modbus.MODBUS_ROLES["client"]))
     cg.add(parent.set_send_wait_time(cv.positive_time_period_milliseconds("250ms")))
@@ -81,7 +82,8 @@ async def to_code(config):
 
     var = cg.new_Pvariable(config[CONF_ID])
     for key, value in ENTITY_COUNT_DEFINES.items():
-        cg.add_define(key, value)
+        CORE.defines = {define for define in CORE.defines if define.name != key}
+        CORE.defines.add(Define(key, value))
     cg.add_define("USE_SENSOR")
     cg.add_define("USE_BINARY_SENSOR")
     cg.add_define("USE_SWITCH")
