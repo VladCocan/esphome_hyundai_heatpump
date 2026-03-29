@@ -1,23 +1,25 @@
+from esphome import core
 import esphome.codegen as cg
 import esphome.config_validation as cv
-from esphome.components import modbus, modbus_controller
+from esphome.components import modbus, modbus_controller, uart
 from esphome.const import (
     CONF_ADDRESS,
     CONF_ID,
     CONF_UPDATE_INTERVAL,
 )
 
-DEPENDENCIES = ["modbus"]
+DEPENDENCIES = ["uart"]
 AUTO_LOAD = [
+    "modbus",
     "sensor",
     "binary_sensor",
     "switch",
     "number",
     "select",
     "text_sensor",
-    "modbus_controller",
 ]
 
+CONF_INTERNAL_MODBUS_ID = "internal_modbus_id"
 CONF_MODBUS_ID = modbus.CONF_MODBUS_ID
 
 hyundai_heatpump_ns = cg.esphome_ns.namespace("hyundai_heatpump")
@@ -26,19 +28,42 @@ HyundaiHeatPump = hyundai_heatpump_ns.class_(
     modbus_controller.ModbusController,
 )
 
-CONFIG_SCHEMA = (
+def _inject_modbus_reference(config):
+    declared_internal_id = config[CONF_INTERNAL_MODBUS_ID]
+    if declared_internal_id.id is None:
+        declared_internal_id.id = f"{config[CONF_ID].id}_modbus"
+        declared_internal_id.is_manual = True
+
+    internal_id = declared_internal_id.copy()
+    internal_id.is_declaration = False
+    config[CONF_MODBUS_ID] = internal_id
+    return config
+
+
+CONFIG_SCHEMA = cv.All(
     cv.Schema(
         {
             cv.GenerateID(): cv.declare_id(HyundaiHeatPump),
+            cv.GenerateID(CONF_INTERNAL_MODBUS_ID): cv.declare_id(modbus.Modbus),
             cv.Optional(CONF_UPDATE_INTERVAL, default="10s"): cv.update_interval,
         }
     )
     .extend(cv.polling_component_schema("10s"))
-    .extend(modbus.modbus_device_schema(0x01))
+    .extend(uart.UART_DEVICE_SCHEMA)
+    .extend(cv.Schema({cv.Optional(CONF_ADDRESS, default=0x01): cv.hex_uint8_t})),
+    _inject_modbus_reference,
 )
 
 
 async def to_code(config):
+    parent = cg.new_Pvariable(config[CONF_INTERNAL_MODBUS_ID])
+    await cg.register_component(parent, config)
+    await uart.register_uart_device(parent, config)
+    cg.add(parent.set_role(modbus.MODBUS_ROLES["client"]))
+    cg.add(parent.set_send_wait_time(cv.positive_time_period_milliseconds("250ms")))
+    cg.add(parent.set_turnaround_time(cv.positive_time_period_milliseconds("100ms")))
+    cg.add(parent.set_disable_crc(False))
+
     var = cg.new_Pvariable(config[CONF_ID])
     cg.add_define("USE_SENSOR")
     cg.add_define("USE_BINARY_SENSOR")
@@ -47,4 +72,6 @@ async def to_code(config):
     cg.add_define("USE_SELECT")
     cg.add_define("USE_TEXT_SENSOR")
     await cg.register_component(var, config)
-    await modbus.register_modbus_device(var, config)
+    cg.add(var.set_parent(parent))
+    cg.add(var.set_address(config[CONF_ADDRESS]))
+    cg.add(parent.register_device(var))
