@@ -22,6 +22,15 @@ AUTO_LOAD = [
 CONF_INTERNAL_MODBUS_ID = "internal_modbus_id"
 CONF_MODBUS_ID = modbus.CONF_MODBUS_ID
 
+ENTITY_COUNT_DEFINES = {
+    "ESPHOME_ENTITY_SENSOR_COUNT": 22,
+    "ESPHOME_ENTITY_BINARY_SENSOR_COUNT": 13,
+    "ESPHOME_ENTITY_SWITCH_COUNT": 8,
+    "ESPHOME_ENTITY_NUMBER_COUNT": 10,
+    "ESPHOME_ENTITY_SELECT_COUNT": 9,
+    "ESPHOME_ENTITY_TEXT_SENSOR_COUNT": 11,
+}
+
 hyundai_heatpump_ns = cg.esphome_ns.namespace("hyundai_heatpump")
 HyundaiHeatPump = hyundai_heatpump_ns.class_(
     "HyundaiHeatPump",
@@ -65,6 +74,8 @@ async def to_code(config):
     cg.add(parent.set_disable_crc(False))
 
     var = cg.new_Pvariable(config[CONF_ID])
+    for key, value in ENTITY_COUNT_DEFINES.items():
+        cg.add_define(key, value)
     cg.add_define("USE_SENSOR")
     cg.add_define("USE_BINARY_SENSOR")
     cg.add_define("USE_SWITCH")
