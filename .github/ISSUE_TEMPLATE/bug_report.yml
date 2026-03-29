@@ -1,0 +1,40 @@
+name: Bug report
+description: Report a defect in the ESPHome component or sample configuration.
+title: "bug: "
+labels:
+  - bug
+body:
+  - type: textarea
+    id: summary
+    attributes:
+      label: Summary
+      description: Describe the observed problem.
+      placeholder: The heat pump reports an incorrect register value or a control does not write correctly.
+    validations:
+      required: true
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: Include ESPHome version, hardware details, and anything specific about the heat pump model.
+      placeholder: ESPHome 2026.3.1, ESP32 DevKit, Hyundai R290 8 kW...
+    validations:
+      required: true
+  - type: textarea
+    id: config
+    attributes:
+      label: Relevant configuration
+      description: Paste the relevant YAML fragment. Remove secrets first.
+      render: yaml
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs or evidence
+      description: Add ESPHome logs, screenshots, or register values that help reproduce the issue.
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Reproduction steps
+      description: List the exact steps needed to trigger the issue.
+    validations:
+      required: true

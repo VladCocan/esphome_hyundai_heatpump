@@ -1,0 +1,26 @@
+name: Feature request
+description: Suggest a new register mapping, control, or repository improvement.
+title: "feature: "
+labels:
+  - enhancement
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem to solve
+      description: Explain the use case or missing capability.
+      placeholder: A specific register is available in the wired controller documentation but is not yet exposed.
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed solution
+      description: Describe the expected behavior, entities, or register mapping.
+    validations:
+      required: true
+  - type: textarea
+    id: references
+    attributes:
+      label: References
+      description: Add register numbers, manual excerpts, existing YAML snippets, or other context.
