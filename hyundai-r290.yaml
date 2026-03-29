@@ -67,3 +67,7 @@ hyundai_heatpump:
   uart_id: uart_bus
   address: 1
   update_interval: 10s
+  
+  # debug_log_messages: true
+  # debug_log_messages_raw: true
+  # debug_log_messages_on_change: true

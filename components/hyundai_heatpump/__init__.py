@@ -8,7 +8,7 @@ from esphome.const import (
     CONF_UPDATE_INTERVAL,
 )
 
-DEPENDENCIES = ["uart"]
+DEPENDENCIES = ["uart", "modbus_controller"]
 AUTO_LOAD = [
     "modbus",
     "sensor",
@@ -21,6 +21,9 @@ AUTO_LOAD = [
 
 CONF_INTERNAL_MODBUS_ID = "internal_modbus_id"
 CONF_MODBUS_ID = modbus.CONF_MODBUS_ID
+CONF_DEBUG_LOG_MESSAGES = "debug_log_messages"
+CONF_DEBUG_LOG_MESSAGES_RAW = "debug_log_messages_raw"
+CONF_DEBUG_LOG_MESSAGES_ON_CHANGE = "debug_log_messages_on_change"
 
 ENTITY_COUNT_DEFINES = {
     "ESPHOME_ENTITY_SENSOR_COUNT": 22,
@@ -55,6 +58,9 @@ CONFIG_SCHEMA = cv.All(
             cv.GenerateID(): cv.declare_id(HyundaiHeatPump),
             cv.GenerateID(CONF_INTERNAL_MODBUS_ID): cv.declare_id(modbus.Modbus),
             cv.Optional(CONF_UPDATE_INTERVAL, default="10s"): cv.update_interval,
+            cv.Optional(CONF_DEBUG_LOG_MESSAGES, default=False): cv.boolean,
+            cv.Optional(CONF_DEBUG_LOG_MESSAGES_RAW, default=False): cv.boolean,
+            cv.Optional(CONF_DEBUG_LOG_MESSAGES_ON_CHANGE, default=False): cv.boolean,
         }
     )
     .extend(cv.polling_component_schema("10s"))
@@ -83,6 +89,9 @@ async def to_code(config):
     cg.add_define("USE_SELECT")
     cg.add_define("USE_TEXT_SENSOR")
     await cg.register_component(var, config)
+    cg.add(var.set_debug_log_messages(config[CONF_DEBUG_LOG_MESSAGES]))
+    cg.add(var.set_debug_log_messages_raw(config[CONF_DEBUG_LOG_MESSAGES_RAW]))
+    cg.add(var.set_debug_log_messages_on_change(config[CONF_DEBUG_LOG_MESSAGES_ON_CHANGE]))
     cg.add(var.set_parent(parent))
     cg.add(var.set_address(config[CONF_ADDRESS]))
     cg.add(parent.register_device(var))

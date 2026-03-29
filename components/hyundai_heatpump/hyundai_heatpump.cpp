@@ -3,8 +3,10 @@
 #include "esphome/core/log.h"
 
 #include "hyundai_heatpump_device.h"
+#include "log.h"
 #include "protocol.h"
 
+#include "log.cpp"
 #include "protocol.cpp"
 #include "hyundai_heatpump_device.cpp"
 
@@ -38,9 +40,18 @@ HyundaiHeatPump::HyundaiHeatPump() {
   this->set_allow_duplicate_commands(false);
 }
 
+void HyundaiHeatPump::set_debug_log_messages(bool value) { debug_log_messages = value; }
+
+void HyundaiHeatPump::set_debug_log_messages_raw(bool value) { debug_log_raw_bytes = value; }
+
+void HyundaiHeatPump::set_debug_log_messages_on_change(bool value) { debug_log_messages_on_change = value; }
+
 void HyundaiHeatPump::setup() {
   if (this->device_ == nullptr) {
     this->device_ = new HyundaiHeatPumpDevice(this);
+  }
+  if (debug_log_messages) {
+    ESP_LOGW(TAG, "setup");
   }
   this->device_->setup();
 }
@@ -56,6 +67,9 @@ void HyundaiHeatPump::dump_config() {
   ESP_LOGCONFIG(TAG, "Hyundai Heat Pump Modbus Component");
   ESP_LOGCONFIG(TAG, "  Address: 0x%02X", this->address_);
   ESP_LOGCONFIG(TAG, "  Command throttle: %u ms", this->command_throttle_);
+  ESP_LOGCONFIG(TAG, "  Debug parsed messages: %s", YESNO(debug_log_messages));
+  ESP_LOGCONFIG(TAG, "  Debug raw messages: %s", YESNO(debug_log_raw_bytes));
+  ESP_LOGCONFIG(TAG, "  Debug on change only: %s", YESNO(debug_log_messages_on_change));
   ESP_LOGCONFIG(TAG, "  Fast polling ranges:");
   log_register_summary(TAG, REG_SWITCHES_0);
   log_register_summary(TAG, REG_ROOM_TEMP_CTRL);
@@ -77,6 +91,14 @@ void HyundaiHeatPump::write_register(uint16_t addr, uint16_t val) {
     ESP_LOGD(TAG, "Writing register %u (%s) = 0x%04X (%u)", addr, name, val, val);
   } else {
     ESP_LOGD(TAG, "Writing register %u = 0x%04X (%u)", addr, val, val);
+  }
+  if (debug_log_raw_bytes) {
+    const uint8_t payload[] = {
+        static_cast<uint8_t>((addr >> 8) & 0xFF), static_cast<uint8_t>(addr & 0xFF),
+        static_cast<uint8_t>((val >> 8) & 0xFF), static_cast<uint8_t>(val & 0xFF),
+    };
+    std::vector<uint8_t> raw(payload, payload + sizeof(payload));
+    log_raw_bytes(TAG, "TX write register: ", raw);
   }
   auto command = modbus_controller::ModbusCommandItem::create_write_single_command(this, addr, val);
   this->queue_command(command);
@@ -111,9 +133,13 @@ void HyundaiHeatPump::set_nibble_(uint16_t addr, uint16_t &cache, uint8_t val, u
 }
 
 void HyundaiHeatPump::schedule_fast_read_() {
+  if (debug_log_messages) {
+    ESP_LOGD(TAG, "Scheduling fast poll ranges");
+  }
   this->queue_command(modbus_controller::ModbusCommandItem::create_read_command(
       this, modbus::ModbusRegisterType::HOLDING, REG_SWITCHES_0, REG_ROOM_TEMP_CTRL - REG_SWITCHES_0 + 1,
       [this](modbus::ModbusRegisterType, uint16_t start_address, const std::vector<uint8_t> &data) {
+        log_raw_bytes(TAG, "RX fast poll: ", data);
         if (this->device_ != nullptr) {
           this->device_->publish_fast_data(data, start_address);
         }
@@ -122,6 +148,7 @@ void HyundaiHeatPump::schedule_fast_read_() {
   this->queue_command(modbus_controller::ModbusCommandItem::create_read_command(
       this, modbus::ModbusRegisterType::HOLDING, REG_COMP_FREQ, REG_PRODUCT_CODE - REG_COMP_FREQ + 1,
       [this](modbus::ModbusRegisterType, uint16_t start_address, const std::vector<uint8_t> &data) {
+        log_raw_bytes(TAG, "RX fast poll: ", data);
         if (this->device_ != nullptr) {
           this->device_->publish_fast_data(data, start_address);
         }
@@ -129,9 +156,13 @@ void HyundaiHeatPump::schedule_fast_read_() {
 }
 
 void HyundaiHeatPump::schedule_config_read_() {
+  if (debug_log_messages) {
+    ESP_LOGD(TAG, "Scheduling slow poll ranges");
+  }
   this->queue_command(modbus_controller::ModbusCommandItem::create_read_command(
       this, modbus::ModbusRegisterType::HOLDING, REG_DHW_PUMP_RETURN_TIME, REG_DT1S5 - REG_DHW_PUMP_RETURN_TIME + 1,
       [this](modbus::ModbusRegisterType, uint16_t start_address, const std::vector<uint8_t> &data) {
+        log_raw_bytes(TAG, "RX config poll: ", data);
         if (this->device_ != nullptr) {
           this->device_->publish_config_data(data, start_address);
         }
@@ -140,6 +171,7 @@ void HyundaiHeatPump::schedule_config_read_() {
   this->queue_command(modbus_controller::ModbusCommandItem::create_read_command(
       this, modbus::ModbusRegisterType::HOLDING, REG_POWER_INPUT_LIMIT, REG_TA_ADJUSTMENT - REG_POWER_INPUT_LIMIT + 1,
       [this](modbus::ModbusRegisterType, uint16_t start_address, const std::vector<uint8_t> &data) {
+        log_raw_bytes(TAG, "RX config poll: ", data);
         if (this->device_ != nullptr) {
           this->device_->publish_config_data(data, start_address);
         }

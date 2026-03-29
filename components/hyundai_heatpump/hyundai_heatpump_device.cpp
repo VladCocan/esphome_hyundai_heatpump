@@ -3,6 +3,7 @@
 #include <cstring>
 
 #include "hyundai_heatpump.h"
+#include "log.h"
 
 #include "esphome/core/application.h"
 #include "esphome/core/log.h"
@@ -17,6 +18,9 @@ static const char *const DEVICE_TAG = "hyundai_heatpump.device";
 namespace {
 
 void log_range_read(uint16_t start_addr, uint16_t end_addr) {
+  if (!debug_log_messages) {
+    return;
+  }
   const char *start_name = register_name(start_addr);
   const char *end_name = register_name(end_addr);
   if (start_name != nullptr && end_name != nullptr) {
@@ -27,6 +31,12 @@ void log_range_read(uint16_t start_addr, uint16_t end_addr) {
 }
 
 void log_key_value(uint16_t address, float value, const char *suffix = nullptr) {
+  if (!debug_log_messages) {
+    return;
+  }
+  if (debug_log_messages_on_change && !log_should_print(log_dedup_key(address), value, 0.001f)) {
+    return;
+  }
   const char *name = register_name(address);
   if (name != nullptr && suffix != nullptr) {
     ESP_LOGV(DEVICE_TAG, "%s [%u] = %.2f %s", name, address, value, suffix);
@@ -40,6 +50,12 @@ void log_key_value(uint16_t address, float value, const char *suffix = nullptr) 
 }
 
 void log_key_text(uint16_t address, const std::string &value) {
+  if (!debug_log_messages) {
+    return;
+  }
+  if (debug_log_messages_on_change && !log_should_print(log_dedup_key(address), value)) {
+    return;
+  }
   const char *name = register_name(address);
   if (name != nullptr) {
     ESP_LOGV(DEVICE_TAG, "%s [%u] = %s", name, address, value.c_str());
@@ -120,11 +136,17 @@ void HyundaiBitSwitch::write_state(bool state) {
     this->publish_state(state);
     return;
   }
+  if (debug_log_messages) {
+    ESP_LOGI(DEVICE_TAG, "Switch write register %u bitmask 0x%04X -> %s", this->reg_, this->bitmask_, ONOFF(state));
+  }
   this->device_->set_bit_(this->reg_, *this->cache_, this->bitmask_, state);
   this->publish_state(state);
 }
 
 void HyundaiNumber::control(float value) {
+  if (debug_log_messages) {
+    ESP_LOGI(DEVICE_TAG, "Number write register %u -> %.2f", this->reg_, value);
+  }
   if (this->write_fn_ != nullptr) {
     this->write_fn_(value);
   } else if (this->device_ != nullptr) {
@@ -137,6 +159,9 @@ void HyundaiSelect::control(const std::string &value) {
   auto index = this->index_of(value);
   if (!index.has_value()) {
     return;
+  }
+  if (debug_log_messages) {
+    ESP_LOGI(DEVICE_TAG, "Select write register %u -> %s", this->reg_, value.c_str());
   }
   if (this->write_fn_ != nullptr) {
     this->write_fn_(index.value());

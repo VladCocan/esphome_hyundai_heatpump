@@ -14,6 +14,10 @@ class HyundaiHeatPump : public modbus_controller::ModbusController {
  public:
   HyundaiHeatPump();
 
+  void set_debug_log_messages(bool value);
+  void set_debug_log_messages_raw(bool value);
+  void set_debug_log_messages_on_change(bool value);
+
   void setup() override;
   void update() override;
   void dump_config() override;
