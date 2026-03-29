@@ -7,8 +7,7 @@
 #include "protocol.h"
 
 #include "log.cpp"
-#include "protocol.cpp"
-#include "hyundai_heatpump_device.cpp"
+#include "modbus_controller.cpp"
 
 namespace esphome {
 namespace hyundai_heatpump {
