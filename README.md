@@ -28,6 +28,7 @@ The component is designed to keep the ESPHome YAML clean: UART is configured in 
 - ESPHome `2026.3.1`
 - An ESP32 board supported by ESPHome
 - Physical UART connection to the heat pump controller
+- A verified hardware interface for the controller bus and voltage levels used by your installation
 
 ## Installation
 
@@ -36,6 +37,7 @@ The component is designed to keep the ESPHome YAML clean: UART is configured in 
 3. Install ESPHome `2026.3.1`.
 4. Copy `secrets.example.yaml` to `secrets.yaml` if you do not already have a local secrets file.
 5. Update Wi-Fi credentials, API keys, OTA password, IP settings, and hardware pins for your installation.
+6. Treat `hyundai-r290.yaml` as a starting point only; it contains example values that must be reviewed before flashing.
 
 ```bash
 python -m venv .venv
@@ -90,12 +92,12 @@ Example:
 
 ```yaml
 hyundai_heatpump:
-	id: heatpump
-	uart_id: uart_bus
-	address: 1
-	debug_log_messages: true
-	debug_log_messages_raw: true
-	debug_log_messages_on_change: true
+  id: heatpump
+  uart_id: uart_bus
+  address: 1
+  debug_log_messages: true
+  debug_log_messages_raw: true
+  debug_log_messages_on_change: true
 ```
 
 ## What The Component Exposes
@@ -149,6 +151,7 @@ This keeps the Home Assistant UI cleaner and closer to what you would expect fro
 ## Safety And Support
 
 - This is an unofficial integration and is not affiliated with Hyundai.
+- Confirm electrical compatibility and controller pinout before connecting UART hardware to the heat pump.
 - Use caution when enabling writable controls on production heating systems.
 - Review register mappings and defaults before changing any heat-pump settings.
 
